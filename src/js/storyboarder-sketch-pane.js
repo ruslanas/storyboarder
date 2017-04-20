@@ -13,6 +13,11 @@ class StoryboarderSketchPane extends EventEmitter {
     this.canvasPointerOut = this.canvasPointerOut.bind(this)
     this.canvasCursorMove = this.canvasCursorMove.bind(this)
 
+    this.onTouchStart = this.onTouchStart.bind(this)
+    this.onTouchEnd = this.onTouchEnd.bind(this)
+    this.onTouchCancel = this.onTouchCancel.bind(this)
+    this.onTouchMove = this.onTouchMove.bind(this)
+
     this.el = el
     this.canvasSize = canvasSize
     this.containerSize = null
@@ -68,6 +73,8 @@ class StoryboarderSketchPane extends EventEmitter {
     this.sketchPaneDOMElement.addEventListener('pointerover', this.canvasPointerOver)
     this.sketchPaneDOMElement.addEventListener('pointerout', this.canvasPointerOut)
 
+    this.el.addEventListener("touchstart", this.onTouchStart, false)
+
     // brush pointer
     this.brushPointerContainer = document.createElement('div')
     this.brushPointerContainer.className = 'brush-pointer'
@@ -84,6 +91,95 @@ class StoryboarderSketchPane extends EventEmitter {
     // adjust sizes
     this.renderContainerSize()
   }
+
+
+
+  onTouchStart (event) {
+    event.preventDefault()
+    let touches = event.changedTouches
+    console.log('start', touches)
+
+    let touch = touches[0]
+
+    let force = touch.touchType == 'stylus' ? touch.force : 1.0
+
+    document.querySelector('.output').innerHTML = JSON.stringify({
+      message: 'start',
+      clientX: touch.clientX,
+      clientY: touch.clientY,
+      force: touch.force
+    }, null, 2)
+
+    let pointerPosition = this.getRelativePosition(touch.clientX, touch.clientY)
+    this.lineMileageCounter.reset()
+    this.sketchPane.down(pointerPosition.x, pointerPosition.y, force)
+
+    document.addEventListener("touchend", this.onTouchEnd, false)
+    document.addEventListener("touchcancel", this.onTouchCancel, false)
+    document.addEventListener("touchmove", this.onTouchMove, false)
+  }
+
+  onTouchMove (event) {
+    event.preventDefault()
+    let touches = event.changedTouches
+    console.log('move', touches)
+
+    let touch = touches[0]
+
+    let force = touch.touchType == 'stylus' ? touch.force : 1.0
+
+    document.querySelector('.output').innerHTML = JSON.stringify({
+      message: 'move',
+      clientX: touch.clientX,
+      clientY: touch.clientY,
+      force: touch.force
+    }, null, 2)
+
+    for (let i = 0; i < touches.length; i++) {
+      let t = touches[i]
+      document.querySelector('.output').innerHTML += t.identifier + '\n'
+      for (let k in t) {
+        document.querySelector('.output').innerHTML += k + ' : ' + t[k] + '\n'
+      }      
+    }
+
+    let pointerPosition = this.getRelativePosition(touch.clientX, touch.clientY)
+    this.sketchPane.move(pointerPosition.x, pointerPosition.y, force)
+    this.lineMileageCounter.add(pointerPosition)
+  }
+
+  onTouchEnd (event) {
+    event.preventDefault()
+    let touches = event.changedTouches
+    console.log('end', touches)
+
+    let touch = touches[0]
+    
+    let force = touch.touchType == 'stylus' ? touch.force : 1.0
+
+    document.querySelector('.output').innerHTML = JSON.stringify({
+      message: 'end',
+      clientX: touch.clientX,
+      clientY: touch.clientY,
+      force: touch.force
+    }, null, 2)
+
+    let pointerPosition = this.getRelativePosition(touch.clientX, touch.clientY)
+    this.sketchPane.up(pointerPosition.x, pointerPosition.y, force)
+    this.emit('lineMileage', this.lineMileageCounter.get())
+
+    document.removeEventListener("touchend", this.onTouchEnd)
+    document.removeEventListener("touchcancel", this.onTouchCancel)
+    document.removeEventListener("touchmove", this.onTouchMove)
+  }
+
+  // TODO
+  onTouchCancel (event) {
+    event.preventDefault()
+    // TODO
+  }
+
+
 
   canvasPointerDown (e) {
     let pointerPosition = this.getRelativePosition(e.clientX, e.clientY)
