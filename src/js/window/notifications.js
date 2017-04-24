@@ -49,7 +49,7 @@ const addNotification = (data) => {
     el.style.height = height + 'px'
   }, 1)
 
-  let timer = setTimeout(removeNotification, 30 * 1000, index)
+  let timer = setTimeout(removeNotification, data.duration, index)
 
   let result = {
     index,
@@ -63,6 +63,7 @@ const addNotification = (data) => {
 
 const formatMessageData = (data) => {
   data.message = data.message.replace(/\n/g, '<br />')
+  data.duration = typeof data.duration === 'undefined' ? 30 * 1000 : data.duration
   return data
 }
 
