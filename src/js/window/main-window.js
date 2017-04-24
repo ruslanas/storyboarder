@@ -67,6 +67,8 @@ let guides
 let storyboarderSketchPane
 let paintingCanvas
 
+const NOTIFICATION_DURATION = 3 * 1000
+
 menu.setMenu()
 
 ///////////////////////////////////////////////////////////////
@@ -333,9 +335,11 @@ let loadBoardUI = ()=> {
 
   toolbar.on('trash', () => {
     storyboarderSketchPane.clearLayer()
+    notifications.notify({ message: 'Cleared', duration: NOTIFICATION_DURATION })
   })
   toolbar.on('fill', color => {
     storyboarderSketchPane.fillLayer(color.toCSS())
+    notifications.notify({ message: 'Filled', duration: NOTIFICATION_DURATION })
   })
 
 
@@ -366,10 +370,12 @@ let loadBoardUI = ()=> {
   toolbar.on('undo', () => {
     undoStack.undo()
     markImageFileDirty()
+    notifications.notify({ message: 'Undo', duration: NOTIFICATION_DURATION })
   })
   toolbar.on('redo', () => {
     undoStack.redo()
     markImageFileDirty()
+    notifications.notify({ message: 'Redo', duration: NOTIFICATION_DURATION })
   })
   
   toolbar.on('grid', value => {
@@ -540,6 +546,7 @@ let newBoard = (position, shouldAddToUndoStack = true) => {
   markBoardFileDirty()
   renderThumbnailDrawer()
   storeUndoStateForScene()
+  notifications.notify({ message: 'New Board Added', duration: NOTIFICATION_DURATION })
 }
 
 let markBoardFileDirty = ()=> {
@@ -617,11 +624,13 @@ let deleteBoards = (args)=> {
     selections.clear()
     renderThumbnailDrawer()
     storeUndoStateForScene()
+    notifications.notify({ message: 'Boards Deleted', duration: NOTIFICATION_DURATION })
   } else {
     // delete a single board
     storeUndoStateForScene(true)
     deleteSingleBoard(currentBoard)
     storeUndoStateForScene()
+    notifications.notify({ message: 'Board Deleted', duration: NOTIFICATION_DURATION })
 
     // if not requested to move forward
     // we take action to move intentionally backward
@@ -657,6 +666,7 @@ let duplicateBoard = ()=> {
   renderThumbnailDrawer()
   gotoBoard(currentBoard)
   storeUndoStateForScene()
+  notifications.notify({ message: 'Duplicated', duration: NOTIFICATION_DURATION })
 }
 
 ///////////////////////////////////////////////////////////////
@@ -1460,12 +1470,14 @@ window.onkeydown = (e)=> {
         if (e.metaKey || e.ctrlKey) {
           copyBoards()
           e.preventDefault()
+          notifications.notify({ message: 'Copied', duration: NOTIFICATION_DURATION })
         }
         break
       case 'KeyV':
         if (e.metaKey || e.ctrlKey) {
           pasteBoards()
           e.preventDefault()
+          notifications.notify({ message: 'Pasted', duration: NOTIFICATION_DURATION })
         }
         break
       case 'KeyZ':
@@ -1473,9 +1485,11 @@ window.onkeydown = (e)=> {
           if (e.shiftKey) {
             undoStack.redo()
             markImageFileDirty()
+            notifications.notify({ message: 'Redo', duration: NOTIFICATION_DURATION })
           } else {
             undoStack.undo()
             markImageFileDirty()
+            notifications.notify({ message: 'Undo', duration: NOTIFICATION_DURATION })
           }
           e.preventDefault()
         }
@@ -1933,6 +1947,7 @@ let pasteBoards = () => {
     }
   })
   storeUndoStateForScene()
+  notifications.notify({ message: 'Pasted', duration: NOTIFICATION_DURATION })
 }
 
 let moveSelectedBoards = (position) => {
@@ -1969,6 +1984,7 @@ let moveSelectedBoards = (position) => {
 
   markBoardFileDirty()
   storeUndoStateForScene()
+  notifications.notify({ message: 'Moved', duration: NOTIFICATION_DURATION })
 }
 
 let reorderBoardsLeft = () => {
@@ -2238,6 +2254,7 @@ ipcRenderer.on('useColor', (e, arg)=> {
 ipcRenderer.on('clear', (e, arg)=> {
   if (!textInputMode) {
     storyboarderSketchPane.clearLayer()
+    notifications.notify({ message: 'Cleared', duration: NOTIFICATION_DURATION })
   }
 })
 
@@ -2254,6 +2271,7 @@ ipcRenderer.on('brushSize', (e, direction) => {
 ipcRenderer.on('flipBoard', (e, arg)=> {
   if (!textInputMode) {
     storyboarderSketchPane.flipLayers()
+    notifications.notify({ message: 'Flipped', duration: NOTIFICATION_DURATION })
   }
 })
 
