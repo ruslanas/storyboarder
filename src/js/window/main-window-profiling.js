@@ -19,7 +19,7 @@ if (PROFILE_WITHOUT_CONTAINER) {
   brushPointerContainer.className = 'brush-pointer'
   brushPointerContainer.style.position = 'absolute'
   brushPointerContainer.style.pointerEvents = 'none'
-  document.body.appendChild(brushPointerContainer)
+  // document.body.appendChild(brushPointerContainer)
 
   // sketchpane
   let sketchPane = new SketchPane()
