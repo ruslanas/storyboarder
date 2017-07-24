@@ -57,6 +57,8 @@ class StoryboarderSketchPane extends EventEmitter {
     this.brushPointerContainer.className = 'brush-pointer'
     this.brushPointerContainer.style.position = 'absolute'
     this.brushPointerContainer.style.pointerEvents = 'none'
+    this.brushPointerContainer.style.top = 0
+    this.brushPointerContainer.style.left = 0
     document.body.appendChild(this.brushPointerContainer)
 
     // container
