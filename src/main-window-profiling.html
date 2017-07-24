@@ -2,7 +2,7 @@
 <html>
   <head>
     <meta charset="UTF-8">
-<!-- 
+
     <link rel="stylesheet" href="./css/fonts.css">
     <link rel="stylesheet" href="./css/mainwindow.css">
     <link rel="stylesheet" href="./css/storyboarder-sketch-pane.css">
@@ -13,16 +13,16 @@
     <link rel="stylesheet" href="./css/transport.css">
     <link rel="stylesheet" href="./css/notifications.css">
     <link rel="stylesheet" href="./css/guides.css">
- -->
+
   </head>
   <body>
-<!-- 
+
     <div id="drag-handle"></div>
     <div id="scenes"></div>
     <div id="script"></div>
- -->
+
     <div id="storyboarder-main">
-<!-- 
+
       <div id="toolbar">
         <div class="column">
           <div class="group group_tools">
@@ -218,10 +218,10 @@
           </div>
         </div>
       </div>
- -->
+
       <div id="sketch-body">
         <div id="storyboarder-sketch-pane"></div>
-<!-- 
+
         <div id="board-metadata">
           <div class="board-metadata-container">
             <div class="number"><svg class="smallicon"><use xlink:href="./img/symbol-defs.svg#icon-board"></use></svg><span id="shot"></span></div>
@@ -331,9 +331,9 @@
             </div>
           </div>
         </div>
- -->
+
       </div>
-<!-- 
+
       <div id="thumbnail-container">
         <div id="thumbnail-drawer"></div>
         <div id="thumbnail-cursor" style="display: none"></div>
@@ -344,13 +344,12 @@
         </div>
         <div class="right-block"></div>
       </div>
- -->
-<!-- 
+
       <div id="playback">
         <div id="left-stats">
           <div class="stats-primary"></div>
           <div class="stats-secondary"></div>
-        </div>
+        <!-- </div> -->
         <div id="icons">
           <div class="transport-control transport-control-prev-scene" data-action="previousScene" data-tooltip
             data-tooltip-title="Previous Scene"
@@ -407,12 +406,12 @@
           </div>
         </div>
       </div>
- -->
+
 
 
 
     </div>
-    <!-- <div id="notifications" class="notifications"></div> -->
+    <div id="notifications" class="notifications"></div>
   <script>
     if (typeof require !== 'undefined') {
       window.onerror = (error, url, line) => require('electron').ipcRenderer.send('errorInWindow', error, url, line)
