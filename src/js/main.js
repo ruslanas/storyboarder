@@ -472,9 +472,12 @@ let loadStoryboarderWindow = (filename, scriptData, locations, characters, board
   }
 
   if (isDev) ipcMain.on('errorInWindow', onErrorInWindow)
-  mainWindow.loadURL(`file://${__dirname}/../main-window.html`)
+  mainWindow.loadURL(`file://${__dirname}/../main-window-profiling.html`)
   mainWindow.once('ready-to-show', () => {
     mainWindow.webContents.send('load', [filename, scriptData, locations, characters, boardSettings, currentPath])
+    // for profiling:
+    welcomeWindow.removeAllListeners('ready-to-show')
+    welcomeWindow.hide()
   })
 
   if (isDev) {
