@@ -53,6 +53,18 @@ containerEl.appendChild(sketchPaneDOMElement)
 el.appendChild(containerEl)
 
 
+// update the cursor
+let image = null
+let threshold = 0xff
+let brushPointer = sketchPane.createBrushPointer(image, brush.getSize(), brush.getAngle(), threshold, true)
+brushPointer.style.setProperty('margin-left', '-' + (brushPointer.width * 0.5) + 'px')
+brushPointer.style.setProperty('margin-top', '-' + (brushPointer.height * 0.5) + 'px')
+brushPointerContainer.innerHTML = ''
+brushPointerContainer.appendChild(brushPointer)
+
+
+
+
 // event listeners
 let canvasPointerUp = (e) => {
     let pointerPosition = getRelativePosition(e.clientX, e.clientY)
@@ -85,24 +97,23 @@ let containerCursorMove = (e) => {
 let canvasPointerOver = (e) => { }
 let canvasPointerOut = (e) => { }
 
+let sketchPaneDOMElementRect
+let onResize = (e) => {
+  // throws "[Violation] Forced reflow while executing JavaScript took 34ms"
+  sketchPaneDOMElementRect = sketchPaneDOMElement.getBoundingClientRect()
+}
 function getRelativePosition(absoluteX, absoluteY) {
-  let rect = sketchPaneDOMElement.getBoundingClientRect()
-  return { x: absoluteX - rect.left, y: absoluteY - rect.top }
+  let left = sketchPaneDOMElementRect.left
+  let top = sketchPaneDOMElementRect.top
+  return { x: absoluteX - left, y: absoluteY - top }
 }
 
 containerEl.addEventListener('pointerdown', canvasPointerDown)
 // this.sketchPaneDOMElement.addEventListener('pointerover', this.canvasPointerOver)
 // this.sketchPaneDOMElement.addEventListener('pointerout', this.canvasPointerOut)
 sketchPaneDOMElement.addEventListener('pointermove', containerCursorMove)
-
-// update the cursor
-let image = null
-let threshold = 0xff
-let brushPointer = sketchPane.createBrushPointer(image, brush.getSize(), brush.getAngle(), threshold, true)
-brushPointer.style.setProperty('margin-left', '-' + (brushPointer.width * 0.5) + 'px')
-brushPointer.style.setProperty('margin-top', '-' + (brushPointer.height * 0.5) + 'px')
-brushPointerContainer.innerHTML = ''
-brushPointerContainer.appendChild(brushPointer)
+window.addEventListener('resize', onResize)
+onResize()
 
 const load = (event, filename, scriptData, locations, characters, boardSettings, currentPath) => {
   remote.getCurrentWindow().show()
