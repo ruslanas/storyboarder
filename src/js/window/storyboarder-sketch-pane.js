@@ -222,7 +222,16 @@ class StoryboarderSketchPane extends EventEmitter {
     // render the cursor
     if (this.lastCursorEvent) {
       // update the position of the cursor
-      this.brushPointerContainer.style.transform = 'translate(' + this.lastCursorEvent.clientX + 'px, ' + this.lastCursorEvent.clientY + 'px)'
+
+      // use transform:
+      // this.brushPointerContainer.style.transform = 'translate(' + this.lastCursorEvent.clientX + 'px, ' + this.lastCursorEvent.clientY + 'px)'
+
+      // use left/top:
+      let posX = this.lastCursorEvent.clientX - this.boundingClientRect.left
+      let posY = this.lastCursorEvent.clientY - this.boundingClientRect.top
+      this.brushPointerContainer.style.left = posX + 6 + 'px' // TODO actual brush size
+      this.brushPointerContainer.style.top = posY + 6 + 'px'
+
       this.lastCursorEvent = null
     }
 
