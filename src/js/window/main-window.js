@@ -67,7 +67,7 @@ let boardPath
 let boardData
 let currentBoard = 0
 
-let scriptFilePath // .fountain, only used for multi-scene projects
+let scriptFilePath // .fountain/.fdx, only used for multi-scene projects
 let scriptData
 let locations
 let characters
@@ -157,8 +157,8 @@ remote.getCurrentWindow().on('focus', () => {
 const load = async (event, args) => {
   try {
     if (args[1]) {
-      log({ type: 'progress', message: 'Loading Fountain File' })
-      console.log("LOADING FOUNTAIN FILE", args[0])
+      log({ type: 'progress', message: 'Loading Project with Script' })
+      console.log("LOADING SCRIPT FILE", args[0])
       ipcRenderer.send('analyticsEvent', 'Application', 'open script', args[0])
 
       scriptFilePath = args[0]
@@ -1283,29 +1283,49 @@ let newBoard = async (position, shouldAddToUndoStack = true) => {
   return position
 }
 
-let insertNewBoardsWithFiles = (filepaths) => {
+// on "Import Images" or mouse drop
+//
+// - JPG/JPEG,
+// - PNG
+// - PSD, must have a layer named 'reference' (unless importTargetLayer preference is set to load a different one)
+//
+let insertNewBoardsWithFiles = async filepaths => {
+  // TODO saveImageFile() first?
+
   let count = filepaths.length
-  let message = `Importing ${count} image${count !== 1 ? 's':''}.\nPlease wait...`
-  notifications.notify({message: message, timing: 2})
+  notifications.notify({
+    message: `Importing ${count} image${count !== 1 ? 's':''}.\nPlease wait...`,
+    timing: 2
+  })
 
-  setTimeout(()=> {
-    let insertionIndex = currentBoard+1
-    let targetLayer = prefsModule.getPrefs('main')['importTargetLayer'] || 'reference'
-    let imageFilePromises = filepaths.map(filepath => {
-      let readerOptions = {
-        importTargetLayer: targetLayer
-      }
-      let imageData = FileHelper.getBase64ImageDataFromFilePath(filepath)
-      if(!imageData) {
-        notifications.notify({message: `Oops! There was a problem importing ${filepath}`, timing: 10})
-        return new Promise((fulfill)=>fulfill())
-      }
-      let board = insertNewBoardDataAtPosition(insertionIndex++)
-      var image = new Image()
-      image.src = imageData[targetLayer]
+  let insertionIndex = currentBoard + 1
 
-      return new Promise((fulfill, reject)=>{
-        setImmediate(()=>{
+  // TODO when do we ever have importTargetLayer set to anything but 'reference?'
+  let targetLayer = prefsModule.getPrefs('main')['importTargetLayer'] || 'reference'
+  let readerOptions = {
+    importTargetLayer: targetLayer
+  }
+
+  let numAdded = 0
+
+  for (let filepath of filepaths) {
+    let imageData = FileHelper.getBase64ImageDataFromFilePath(filepath, readerOptions)
+    if (!imageData || !imageData[targetLayer]) {
+      notifications.notify({ message: `Oops! There was a problem importing ${filepath}`, timing: 10 })
+      return
+    }
+
+    try {
+      await new Promise((resolve, reject) => {
+        let image = new Image()
+
+        //
+        // TODO DRY this up
+        // TODO we have functions elsewhere that do a lot of this
+        //
+        image.onload = () => {
+          let board = insertNewBoardDataAtPosition(insertionIndex++)
+
           // resize the image if it's too big.
           let boardSize = storyboarderSketchPane.sketchPane.getCanvasSize()
           if(boardSize.width < image.width) {
@@ -1348,26 +1368,42 @@ let insertNewBoardsWithFiles = (filepaths) => {
           var imageDataSized = canvas.toDataURL()
           let thumbPath = board.url.replace('.png', '-thumbnail.png')
           saveDataURLtoFile(imageDataSized, thumbPath)
+          numAdded++
+          resolve()
+        }
 
-          fulfill()
-        })
+        image.onerror = event => {
+          reject(new Error(`Image file is missing or invalid`))
+        }
+
+        image.src = imageData[targetLayer]
       })
+    } catch (error) {
+      console.error('Got error', error)
+      notifications.notify({ message: `Could not load image ${path.basename(filepath)}\n` + error.message, timing: 10 })
+    }
+  }
 
-    })
+  // TODO do we need to mark the current layer dirty??
+  //
+  // if (targetLayer === 'reference') {
+  //   markImageFileDirty([LAYER_INDEX_REFERENCE])
+  // } else {
+  //   markImageFileDirty([LAYER_INDEX_MAIN])
+  // }
 
-    Promise.all(imageFilePromises)
-      .then(()=>{
-        markImageFileDirty([1])
-        markBoardFileDirty() // to save new board data
-        renderThumbnailDrawer()
-        let count = imageFilePromises.length
-        let message = `Imported ${count} image${count !== 1 ? 's':''}.\n\nThe image${count !== 1 ? 's are':' is'} on the reference layer, so you can draw over ${count !== 1 ? 'them':'it'}. If you'd like ${count !== 1 ? 'them':'it'} to be the main layer, you can merge ${count !== 1 ? 'them':'it'} up on the sidebar`
-        notifications.notify({message: message, timing: 10})
-        sfx.positive()
-      })
-  }, 1000)
+  markBoardFileDirty() // to save new board data
+  renderThumbnailDrawer()
 
-
+  notifications.notify({
+    message:  `Imported ${numAdded} image${numAdded !== 1 ? 's':''}.\n\n` +
+              `The image${numAdded !== 1 ? 's are':' is'} on the reference layer, `+
+              `so you can draw over ${numAdded !== 1 ? 'them':'it'}. ` +
+              `If you'd like ${numAdded !== 1 ? 'them':'it'} to be the main layer, ` +
+              `you can merge ${numAdded !== 1 ? 'them':'it'} up on the sidebar`,
+    timing: 10
+  })
+  sfx.positive()
 }
 
 let markBoardFileDirty = () => {
@@ -2620,6 +2656,7 @@ let renderThumbnailDrawer = ()=> {
       pasteBoards()
     })
     contextMenu.on('import', () => {
+      // TODO could move the dialog code out of main.js and call it directly here via remote.dialog
       ipcRenderer.send('importImagesDialogue')
     })
     contextMenu.on('reorder-left', () => {
@@ -2769,7 +2806,7 @@ let renderTimeline = () => {
   if (getMarkerEl()) getMarkerEl().style.left = markerLeft
 }
 
-let renderScenes = ()=> {
+let renderScenes = () => {
   let html = []
   let angle = 0
   let i = 0
@@ -3025,6 +3062,7 @@ let loadScene = async (sceneNumber) => {
         let directoryFound = false
         let foundDirectoryName
 
+        console.log('scene:')
         console.log(node)
 
         let id
@@ -3538,45 +3576,69 @@ ipcRenderer.on('nextScene', (event, args)=>{
 // tools
 
 ipcRenderer.on('undo', (e, arg) => {
-  if (storyboarderSketchPane.preventIfLocked()) return
+  if (textInputMode) {
+    remote.getCurrentWebContents().undo()
+  } else {
+    if (storyboarderSketchPane.preventIfLocked()) return
 
-  if (!textInputMode) {
     if (undoStack.getCanUndo()) {
       undoStack.undo()
       sfx.rollover()
     } else {
       sfx.error()
-      notifications.notify({message: 'Nothing more to redo!', timing: 5})
+      notifications.notify({message: 'Nothing more to undo!', timing: 5})
     }
   }
 })
 
 ipcRenderer.on('redo', (e, arg) => {
-  if (storyboarderSketchPane.preventIfLocked()) return
+  if (textInputMode) {
+    remote.getCurrentWebContents().redo()
+  } else {
+    if (storyboarderSketchPane.preventIfLocked()) return
 
-  if (!textInputMode) {
     if (undoStack.getCanRedo()) {
       undoStack.redo()
       sfx.rollover()
     } else {
       sfx.error()
-      notifications.notify({message: 'Nothing left to undo!', timing: 5})
+      notifications.notify({message: 'Nothing left to redo!', timing: 5})
     }
   }
 })
 
-let importImage = (imageDataURL) => {
+ipcRenderer.on('copy', () => {
+  if (textInputMode) {
+    remote.getCurrentWebContents().copy()
+  } else {
+    copyBoards()
+  }
+})
+
+ipcRenderer.on('paste', () => {
+  if (textInputMode) {
+    remote.getCurrentWebContents().paste()
+  } else {
+    pasteBoards()
+  }
+})
+
+// import image from mobile server
+let importImage = imageDataURL => {
   // TODO: undo
-  var image = new Image()
-  image.addEventListener('load', ()=>{
+
+  console.log('importImage')
+
+  let image = new Image()
+  image.addEventListener('load', () => {
     console.log(boardData.aspectRatio)
     console.log((image.height/image.width))
     console.log(image)
+
     let targetWidth
     let targetHeight
     let offsetX
     let offsetY
-
 
     if (boardData.aspectRatio > (image.height/image.width)) {
       targetHeight = 900
@@ -3592,7 +3654,6 @@ let importImage = (imageDataURL) => {
       offsetX = 0
     }
 
-
     // render
     storyboarderSketchPane
       .getLayerCanvasByName('reference')
@@ -3600,12 +3661,12 @@ let importImage = (imageDataURL) => {
       .drawImage(image, offsetX, offsetY, targetWidth, targetHeight)
     markImageFileDirty([0]) // HACK hardcoded
     saveImageFile()
-
-
-  }, false);
+  })
+  image.addEventListener('error', () => {
+    notifications.notify({ message: 'Could not read the image file' })
+  })
 
   image.src = imageDataURL
-
 }
 
 /**
@@ -3797,8 +3858,13 @@ const exportCleanup = () => {
   exporter.exportCleanup(boardData, boardFilename).then(newBoardData => {
     // notifications.notify({ message: "Your scene has been cleaned up!", timing: 20 })
     sfx.positive()
-    // force reload
-    ipcRenderer.send('openFile', boardFilename)
+
+    let srcFilePath = scriptFilePath
+      ? scriptFilePath // use the .fountain/.fdx file, if it is defined …
+      : boardFilename // … otherwise, use the .storyboarder file
+
+    // force reload of project or scene
+    ipcRenderer.send('openFile', srcFilePath)
   }).catch(err => {
     console.log(err)
   })
@@ -4518,7 +4584,7 @@ const fillContext = (context, fillStyle = 'white') => {
 
 const saveAsFolder = async () => {
   let srcFilePath = scriptFilePath
-    ? scriptFilePath // use the .fountain file, if it is defined …
+    ? scriptFilePath // use the .fountain/.fdx file, if it is defined …
     : boardFilename // … otherwise, use the .storyboarder file
 
   // ensure the current board and data is saved
@@ -4584,7 +4650,7 @@ const saveAsFolder = async () => {
 
 const exportZIP = async () => {
   let srcFilePath = scriptFilePath
-    ? scriptFilePath // use the .fountain file, if it is defined …
+    ? scriptFilePath // use the .fountain/.fdx file, if it is defined …
     : boardFilename // … otherwise, use the .storyboarder file
 
   // ensure the current board and data is saved
@@ -4618,7 +4684,7 @@ const reloadScript = async (args) => { // [scriptData, locations, characters]
   // goto the board and render the drawer
   renderScene()
 
-  notifications.notify({ message: 'Fountain script has changed. Reloaded.'})
+  notifications.notify({ message: 'Script has changed. Reloaded.'})
 }
 
 const updateSceneFromScript = async () => {

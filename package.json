@@ -1,7 +1,7 @@
 {
   "name": "storyboarder",
   "productName": "Storyboarder",
-  "version": "0.14.0",
+  "version": "1.0.0",
   "description": "The fastest way to storyboard.",
   "main": "src/js/main.js",
   "scripts": {
@@ -10,7 +10,7 @@
     "dist:win": "build -w",
     "dist:linux": "build -l",
     "dist": "build -mwl",
-    "test": "./node_modules/.bin/electron-mocha --renderer test/**/*.test.js"
+    "test": "mocha $(find test -name '*[!renderer].test.js') && electron-mocha --renderer test/**/*.renderer.test.js"
   },
   "repository": {
     "type": "git",
@@ -80,7 +80,7 @@
   },
   "devDependencies": {
     "electron": "1.8.1",
-    "electron-builder": "19.26.3",
+    "electron-builder": "19.43.0",
     "electron-mocha": "4.0.0",
     "mocha": "3.5.0",
     "mock-fs": "4.4.1"
@@ -93,7 +93,7 @@
     "eases": "1.0.8",
     "electron-google-analytics": "0.0.16",
     "electron-is-dev": "0.3.0",
-    "electron-updater": "2.8.7",
+    "electron-updater": "2.15.0",
     "express": "^4.15.4",
     "fs-extra": "4.0.2",
     "gifencoder": "^1.1.0",
@@ -108,10 +108,11 @@
     "socket.io": "^2.0.3",
     "tether": "1.4.0",
     "tether-tooltip": "1.2.0",
+    "tmp": "0.0.33",
     "tonal": "0.69.9",
     "tone": "^0.10.0",
     "trash": "4.0.1",
     "vkey": "1.0.1",
-    "tmp": "0.0.33"
+    "xml2js": "0.4.19"
   }
 }
